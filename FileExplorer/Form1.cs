@@ -1,22 +1,35 @@
+﻿using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
+using System.Net.WebSockets;
 using System.Security.AccessControl;
+using System.Windows.Forms;
+using System.Xml;
 using System.Xml.Serialization;
+using static System.ComponentModel.Design.ObjectSelectorEditor;
 
 namespace FileExplorer
 {
+    public enum IconIndex { None = 0, FolderClosed = 1, FolderOpen = 2 };
+
     public partial class Form1 : Form
     {
         private static readonly string SettingsFilePath = @"settings.xml";
 
         private string DirectoryName = string.Empty;
+        private List<string> allFilesExt = new List<string>();
+        private List<string> buffer = new List<string>();
+        private int bufferIndex = -1;
+        private long itemsCount = 1;
 
         public Form1()
         {
             InitializeComponent();
+            ResetIcons();
             TryLoadSettings();
 
-            this.MinimumSize = this.Size;
+            this.MinimumSize = new Size(256, 144);
 
             UpdateMenuStrip();
             UpdateContextMenuStrip();
@@ -25,58 +38,140 @@ namespace FileExplorer
         public Form1(string path)
         {
             InitializeComponent();
+            ResetIcons();
 
             if (!Directory.Exists(path))
                 throw new ArgumentException(nameof(path));
             LoadDirectory(path);
-            DirectoryName = path;
-            dir_textBox.Text = path;
 
-            this.MinimumSize = this.Size;
+            this.MinimumSize = new Size(256, 144);
 
             UpdateMenuStrip();
             UpdateContextMenuStrip();
         }
 
-        public void LoadDirectory(string path)
+        private void ResetIcons()
         {
+            allFilesExt.Clear();
+            imageList1.Images.Clear();
+            imageList1.Images.Add(new Bitmap("error_icn.png"));
+            allFilesExt.Add("none");
+            imageList1.Images.Add(new Bitmap("directory_closed.png"));
+            allFilesExt.Add("folder_closed");
+            imageList1.Images.Add(new Bitmap("directory_open.png"));
+            allFilesExt.Add("folder_open");
+        }
+
+        private int GetIconIndex(string path)
+        {
+            if (Directory.Exists(path))
+                return (int)IconIndex.FolderClosed;
+            if(!File.Exists(path))
+                throw new FileNotFoundException(path);
+
+            FileInfo file = new FileInfo(path);
+            var index = allFilesExt.IndexOf(file.Extension);
+            if (index != -1)
+                return index;
+
+            var icon = Icon.ExtractAssociatedIcon(file.FullName);
+            if (icon == null)
+                return (int)IconIndex.None;
+
+            imageList1.Images.Add(icon);
+            allFilesExt.Add(file.Extension);
+
+            return imageList1.Images.Count - 1;
+        }
+
+        private void LoadDirectory(string path)
+        {
+            size_toolStripStatusLabel.Visible = false;
             treeView.Nodes.Clear();
+            ResetIcons();
+            itemsCount = 1;
 
             DirectoryInfo dir = new DirectoryInfo(path);
-            TreeNode node = treeView.Nodes.Add(dir.Name);
-            node.Tag = dir.FullName;
+            TreeNode nodeRef = treeView.Nodes.Add(dir.FullName);
+            nodeRef.Tag = dir.FullName;
+            nodeRef.ImageIndex = (int)IconIndex.FolderClosed;
+            nodeRef.SelectedImageIndex = (int)IconIndex.FolderClosed;
 
-            LoadFiles(path, node);
-            LoadSubDirectories(path, node);
+            LoadFiles(path, nodeRef);
+            LoadSubDirectories(path, nodeRef);
 
-            node.Expand();
+            nodeRef.Expand();
+
+            dir_textBox.Text = path;
+            items_toolStripStatusLabel.Text = $"{itemsCount} items";
         }
 
         private void LoadSubDirectories(string path, TreeNode node)
         {
-            var subDir = Directory.GetDirectories(path);
-            foreach (var ob in subDir)
+            string[] subDirs;
+            try
+            {
+                subDirs = Directory.GetDirectories(path);
+            }
+            catch
+            {
+                return;
+            }
+            foreach (var ob in subDirs)
             {
                 DirectoryInfo dir = new DirectoryInfo(ob);
-                TreeNode subNode = node.Nodes.Add(dir.Name);
-                subNode.Tag = dir.FullName;
-                try
+                var att = dir.Attributes;
+
+                bool isHidden = (att & FileAttributes.Hidden) == FileAttributes.Hidden, isSystem = (att & FileAttributes.System) == FileAttributes.System;
+                if (!(isHidden && !hiddenToolStripMenuItem.Checked) && !(isSystem && !systemToolStripMenuItem.Checked))
                 {
+                    TreeNode subNode = node.Nodes.Add(dir.Name);
+                    subNode.Tag = dir.FullName;
+                    if (isHidden)
+                        subNode.ForeColor = Color.DimGray;
+                    else if (isSystem)
+                        subNode.ForeColor = Color.DarkBlue;
+                    subNode.ImageIndex = (int)IconIndex.FolderClosed;
+                    subNode.SelectedImageIndex= (int)IconIndex.FolderClosed;
                     LoadFiles(ob, subNode);
-                    LoadSubDirectories(ob, subNode);
+                    LoadSubDirectories(ob, subNode);// приклад рекурсii
+
+                    itemsCount++;
                 }
-                catch { }
             }
         }
 
         private void LoadFiles(string path, TreeNode node)
         {
-            var Files = Directory.GetFiles(path);
-            foreach (var ob in Files)
+            string[] subFiles;
+            try
+            {
+                subFiles = Directory.GetFiles(path);
+            }
+            catch
+            {
+                return;
+            }
+
+            foreach (var ob in subFiles)
             {
                 FileInfo file = new FileInfo(ob);
-                var subNode = node.Nodes.Add(file.Name);
-                subNode.Tag = file.FullName;
+                var att = file.Attributes;
+                bool isHidden = (att & FileAttributes.Hidden) == FileAttributes.Hidden, isSystem = (att & FileAttributes.System) == FileAttributes.System;
+                if (!(isHidden && !hiddenToolStripMenuItem.Checked) && !(isSystem && !systemToolStripMenuItem.Checked))
+                {
+                    var subNode = node.Nodes.Add(file.Name);
+                    subNode.Tag = file.FullName;
+                    if (isHidden)
+                        subNode.ForeColor = Color.DimGray;
+                    else if(isSystem)
+                        subNode.ForeColor = Color.DarkBlue;
+                    var index = GetIconIndex(file.FullName);
+                    subNode.ImageIndex = index;
+                    subNode.SelectedImageIndex = index;
+
+                    itemsCount++;
+                }
             }
         }
 
@@ -135,9 +230,8 @@ namespace FileExplorer
                     {
                         if(serializer.Deserialize(stream) is string directoryName)
                         {
+                            dir_textBox.Text = directoryName;
                             DirectoryName = directoryName;
-                            LoadDirectory(DirectoryName);
-                            dir_textBox.Text = DirectoryName;
                         }
                         else
                         {
@@ -155,6 +249,38 @@ namespace FileExplorer
             }
         }
 
+        private void Undo()
+        {
+            if (bufferIndex <= 0)
+                return;
+            bufferIndex--;
+            DirectoryName = buffer[bufferIndex];
+            LoadDirectory(DirectoryName);
+            SaveSettings();
+        }
+
+        private void Redo()
+        {
+            if (bufferIndex >= buffer.Count - 1)
+                return;
+            bufferIndex++;
+            DirectoryName = buffer[bufferIndex];
+            LoadDirectory(DirectoryName);
+            SaveSettings();
+        }
+
+        private void MoveBuffer()
+        {
+            if(buffer.Count - 1 != bufferIndex)
+            {
+                var newList = buffer.Take(bufferIndex + 1);
+                buffer.Clear();
+                buffer.AddRange(newList);
+            }
+            bufferIndex++;
+            buffer.Add(DirectoryName);
+        }
+
         private void load_button_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(dir_textBox.Text))
@@ -170,6 +296,7 @@ namespace FileExplorer
             DirectoryName = dir_textBox.Text;
             LoadDirectory(DirectoryName);
             SaveSettings();
+            MoveBuffer();
         }
 
         private void select_button_Click(object sender, EventArgs e)
@@ -186,7 +313,7 @@ namespace FileExplorer
         private void newWindowToolStripMenuItem_Click(object sender, EventArgs e)
         {
             var form = new Form1();
-            form.Show();// trouble with owner
+            form.Show();
         }
 
         private void openDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
@@ -205,9 +332,13 @@ namespace FileExplorer
                 return;
             try
             {
+                var path = (string)treeView.SelectedNode.Tag;
+                if (!Directory.Exists(path))
+                    path = $"/select,{path}";
+
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
-                    Arguments = (string)treeView.SelectedNode.Tag,
+                    Arguments = path,
                     FileName = "explorer.exe"
                 };
 
@@ -235,12 +366,12 @@ namespace FileExplorer
             if (File.Exists(path))
             {
                 FileInfo file = new FileInfo(path);
-                message += $"Name: {file.Name}\nPath: {file.FullName}\nSize: {file.Length} Bytes\nCreation time: {file.CreationTime}\nLast write time: {file.LastWriteTime}";
+                message += $"Name: {file.Name}\nPath: {file.FullName}\nSize: {file.Length} Bytes\nCreation time: {file.CreationTime}\nLast write time: {file.LastWriteTime}\nAttributes: {file.Attributes}";
             }
             else
             {
                 DirectoryInfo dir = new DirectoryInfo(path);
-                message += $"Name: {dir.Name}\nPath: {dir.FullName}\nSize: {DirectorySize(dir)} Bytes\nCreation time: {dir.CreationTime}\nLast write time: {dir.LastWriteTime}";
+                message += $"Name: {dir.Name}\nPath: {dir.FullName}\nSize: {DirectorySize(dir)} Bytes\nCreation time: {dir.CreationTime}\nLast write time: {dir.LastWriteTime}\nAttributes: {dir.Attributes}";
             }
             MessageBox.Show(message);
         }
@@ -272,6 +403,129 @@ namespace FileExplorer
         {
             UpdateMenuStrip();
             UpdateContextMenuStrip();
+            if (e.Node == null)
+            {
+                size_toolStripStatusLabel.Visible = false;
+                return;
+            }
+            else
+                size_toolStripStatusLabel.Visible = true;
+            long size = 0;
+            if (Directory.Exists((string)e.Node.Tag))
+                size = DirectorySize(new DirectoryInfo((string)e.Node.Tag));
+            else
+                size = new FileInfo((string)e.Node.Tag).Length;
+            size_toolStripStatusLabel.Text = $"{size} bytes";
+        }
+
+        private void recentToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            dir_textBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.Recent);
+            dir_textBox.SelectAll();
+            dir_textBox.Focus();
+        }
+
+        private void documentsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            dir_textBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            dir_textBox.SelectAll();
+            dir_textBox.Focus();
+        }
+
+        private void desktopToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            dir_textBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            dir_textBox.SelectAll();
+            dir_textBox.Focus();
+        }
+
+        private void userToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            dir_textBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            dir_textBox.SelectAll();
+            dir_textBox.Focus();
+        }
+
+        private void picturesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            dir_textBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+            dir_textBox.SelectAll();
+            dir_textBox.Focus();
+        }
+
+        private void musicToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            dir_textBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.MyMusic);
+            dir_textBox.SelectAll();
+            dir_textBox.Focus();
+        }
+
+        private void undoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Undo();
+        }
+
+        private void redoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Redo();
+        }
+
+        private void treeView_MouseMove(object sender, MouseEventArgs e)
+        {
+            var node = treeView.GetNodeAt(e.Location);
+            if (node == null || node.Tag == null)
+                return;
+
+        }
+
+        private void hiddenToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            //save
+        }
+
+        private void systemToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            //save
+        }
+
+        private void treeView_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        {
+            if (e.Node == null)
+                return;
+            if (!Directory.Exists((string)e.Node.Tag))
+                return;
+
+            e.Node.ImageIndex = (int)IconIndex.FolderOpen;
+            e.Node.SelectedImageIndex = (int)IconIndex.FolderOpen;
+        }
+
+        private void treeView_BeforeCollapse(object sender, TreeViewCancelEventArgs e)
+        {
+            if (e.Node == null)
+                return;
+            if (!Directory.Exists((string)e.Node.Tag))
+                return;
+
+            e.Node.ImageIndex = (int)IconIndex.FolderClosed;
+            e.Node.SelectedImageIndex = (int)IconIndex.FolderClosed;
+        }
+
+        private void treeView_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            if (Directory.Exists((string)e.Node.Tag))
+                return;
+
+            var path = (string)e.Node.Tag;
+            if (!Directory.Exists(path))
+                path = $"/select,{path}";
+
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                Arguments = path,
+                FileName = "explorer.exe"
+            };
+
+            Process.Start(startInfo);
         }
     }
 }
