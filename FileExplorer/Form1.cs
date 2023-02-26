@@ -7,7 +7,6 @@ using System.Security.AccessControl;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Serialization;
-using static System.ComponentModel.Design.ObjectSelectorEditor;
 
 namespace FileExplorer
 {
@@ -19,8 +18,6 @@ namespace FileExplorer
 
         private string DirectoryName = string.Empty;
         private List<string> allFilesExt = new List<string>();
-        private List<string> buffer = new List<string>();
-        private int bufferIndex = -1;
         private long itemsCount = 1;
 
         public Form1()
@@ -249,38 +246,6 @@ namespace FileExplorer
             }
         }
 
-        private void Undo()
-        {
-            if (bufferIndex <= 0)
-                return;
-            bufferIndex--;
-            DirectoryName = buffer[bufferIndex];
-            LoadDirectory(DirectoryName);
-            SaveSettings();
-        }
-
-        private void Redo()
-        {
-            if (bufferIndex >= buffer.Count - 1)
-                return;
-            bufferIndex++;
-            DirectoryName = buffer[bufferIndex];
-            LoadDirectory(DirectoryName);
-            SaveSettings();
-        }
-
-        private void MoveBuffer()
-        {
-            if(buffer.Count - 1 != bufferIndex)
-            {
-                var newList = buffer.Take(bufferIndex + 1);
-                buffer.Clear();
-                buffer.AddRange(newList);
-            }
-            bufferIndex++;
-            buffer.Add(DirectoryName);
-        }
-
         private void load_button_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(dir_textBox.Text))
@@ -296,7 +261,6 @@ namespace FileExplorer
             DirectoryName = dir_textBox.Text;
             LoadDirectory(DirectoryName);
             SaveSettings();
-            MoveBuffer();
         }
 
         private void select_button_Click(object sender, EventArgs e)
@@ -458,16 +422,6 @@ namespace FileExplorer
             dir_textBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.MyMusic);
             dir_textBox.SelectAll();
             dir_textBox.Focus();
-        }
-
-        private void undoToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Undo();
-        }
-
-        private void redoToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Redo();
         }
 
         private void treeView_MouseMove(object sender, MouseEventArgs e)
