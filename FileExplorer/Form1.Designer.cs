@@ -80,7 +80,7 @@
             this.viewToolStripMenuItem});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
-            this.menuStrip.Size = new System.Drawing.Size(420, 24);
+            this.menuStrip.Size = new System.Drawing.Size(493, 24);
             this.menuStrip.TabIndex = 0;
             this.menuStrip.Text = "menuStrip1";
             // 
@@ -152,7 +152,7 @@
             // 
             this.copyPathToolStripMenuItem.Name = "copyPathToolStripMenuItem";
             this.copyPathToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.C)));
-            this.copyPathToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.copyPathToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
             this.copyPathToolStripMenuItem.Text = "Copy Path";
             this.copyPathToolStripMenuItem.Click += new System.EventHandler(this.copyPathToolStripMenuItem_Click);
             // 
@@ -224,7 +224,7 @@
             // 
             this.hiddenToolStripMenuItem.CheckOnClick = true;
             this.hiddenToolStripMenuItem.Name = "hiddenToolStripMenuItem";
-            this.hiddenToolStripMenuItem.Size = new System.Drawing.Size(113, 22);
+            this.hiddenToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.hiddenToolStripMenuItem.Text = "Hidden";
             this.hiddenToolStripMenuItem.Click += new System.EventHandler(this.hiddenToolStripMenuItem_Click);
             // 
@@ -232,7 +232,7 @@
             // 
             this.systemToolStripMenuItem.CheckOnClick = true;
             this.systemToolStripMenuItem.Name = "systemToolStripMenuItem";
-            this.systemToolStripMenuItem.Size = new System.Drawing.Size(113, 22);
+            this.systemToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.systemToolStripMenuItem.Text = "System";
             this.systemToolStripMenuItem.Click += new System.EventHandler(this.systemToolStripMenuItem_Click);
             // 
@@ -250,7 +250,7 @@
             this.treeView.Location = new System.Drawing.Point(0, 85);
             this.treeView.Name = "treeView";
             this.treeView.SelectedImageIndex = 0;
-            this.treeView.Size = new System.Drawing.Size(420, 243);
+            this.treeView.Size = new System.Drawing.Size(493, 243);
             this.treeView.TabIndex = 2;
             this.treeView.BeforeCollapse += new System.Windows.Forms.TreeViewCancelEventHandler(this.treeView_BeforeCollapse);
             this.treeView.BeforeExpand += new System.Windows.Forms.TreeViewCancelEventHandler(this.treeView_BeforeExpand);
@@ -323,13 +323,13 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dir_textBox.Location = new System.Drawing.Point(79, 27);
             this.dir_textBox.Name = "dir_textBox";
-            this.dir_textBox.Size = new System.Drawing.Size(329, 23);
+            this.dir_textBox.Size = new System.Drawing.Size(402, 23);
             this.dir_textBox.TabIndex = 4;
             // 
             // load_button
             // 
             this.load_button.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.load_button.Location = new System.Drawing.Point(333, 56);
+            this.load_button.Location = new System.Drawing.Point(406, 56);
             this.load_button.Name = "load_button";
             this.load_button.Size = new System.Drawing.Size(75, 23);
             this.load_button.TabIndex = 5;
@@ -340,7 +340,7 @@
             // select_button
             // 
             this.select_button.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.select_button.Location = new System.Drawing.Point(252, 56);
+            this.select_button.Location = new System.Drawing.Point(325, 56);
             this.select_button.Name = "select_button";
             this.select_button.Size = new System.Drawing.Size(75, 23);
             this.select_button.TabIndex = 6;
@@ -356,7 +356,7 @@
             this.size_toolStripStatusLabel});
             this.statusStrip1.Location = new System.Drawing.Point(0, 331);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(420, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(493, 22);
             this.statusStrip1.TabIndex = 7;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -382,7 +382,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(420, 353);
+            this.ClientSize = new System.Drawing.Size(493, 353);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.select_button);
             this.Controls.Add(this.load_button);

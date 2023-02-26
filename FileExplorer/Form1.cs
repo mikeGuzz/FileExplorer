@@ -39,7 +39,7 @@ namespace FileExplorer
 
             if (!Directory.Exists(path))
                 throw new ArgumentException(nameof(path));
-            LoadDirectory(path);
+            SetTreeView(path);
 
             this.MinimumSize = new Size(256, 144);
 
@@ -81,7 +81,7 @@ namespace FileExplorer
             return imageList1.Images.Count - 1;
         }
 
-        private void LoadDirectory(string path)
+        private void SetTreeView(string path)
         {
             size_toolStripStatusLabel.Visible = false;
             treeView.Nodes.Clear();
@@ -259,7 +259,7 @@ namespace FileExplorer
                 return;
             }
             DirectoryName = dir_textBox.Text;
-            LoadDirectory(DirectoryName);
+            SetTreeView(DirectoryName);
             SaveSettings();
         }
 
@@ -335,7 +335,15 @@ namespace FileExplorer
             else
             {
                 DirectoryInfo dir = new DirectoryInfo(path);
-                message += $"Name: {dir.Name}\nPath: {dir.FullName}\nSize: {DirectorySize(dir)} Bytes\nCreation time: {dir.CreationTime}\nLast write time: {dir.LastWriteTime}\nAttributes: {dir.Attributes}";
+                try
+                {
+                    message += $"Name: {dir.Name}\nPath: {dir.FullName}\nSize: {DirectorySize(dir)} Bytes\nCreation time: {dir.CreationTime}\nLast write time: {dir.LastWriteTime}\nAttributes: {dir.Attributes}";
+                }
+                catch(Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
             }
             MessageBox.Show(message);
         }
@@ -376,7 +384,17 @@ namespace FileExplorer
                 size_toolStripStatusLabel.Visible = true;
             long size = 0;
             if (Directory.Exists((string)e.Node.Tag))
-                size = DirectorySize(new DirectoryInfo((string)e.Node.Tag));
+            {
+                try
+                {
+                    size = DirectorySize(new DirectoryInfo((string)e.Node.Tag));
+                }
+                catch
+                {
+                    size_toolStripStatusLabel.Text = "error";
+                    return;
+                }
+            }
             else
                 size = new FileInfo((string)e.Node.Tag).Length;
             size_toolStripStatusLabel.Text = $"{size} bytes";
